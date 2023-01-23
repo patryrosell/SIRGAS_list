@@ -39,7 +39,7 @@ Download and Install [R](https://cran.r-project.org/)
 	- STAT: 4-letter name of each station
 	- LAT: Latitude
 	- LONG: Longitude
-	- h: Ellipsoidal height
+	- h: Ellipsoidal height \
  Additionally, a plot with the residuals of the transformation will be stored as "plot_tol.jpeg"
 8. The function of step 7. can be reused for any file with the same format of "SIRGAS_list.txt". It requires two arguments:
 	- Location path of the file to be transformed
