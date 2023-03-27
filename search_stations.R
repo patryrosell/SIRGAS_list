@@ -31,6 +31,7 @@ search_stations<-function(pathout,trasform) {
                     dec=".",
                     stringsAsFactors = FALSE)
     week = max (OUT$WEEK) + 1
+    print(paste0("Latest week consulted: ",max (OUT$WEEK),". Starting from: ",max (OUT$WEEK)+1))
     
   } else {
     
@@ -42,6 +43,8 @@ search_stations<-function(pathout,trasform) {
                      Y=numeric(0),
                      Z=numeric(0),
                      WEEK=numeric(0))
+    
+    print("Starting from the very begining (Week 1043)")
     
   }
   
@@ -58,46 +61,63 @@ search_stations<-function(pathout,trasform) {
     # URL name  REPRO1
     # url_raw=paste0(URL_name,j,'/')
     
-    # URL name REPRO2
-    url_raw=paste0(URL_name,j,'/REPRO2/')
+    if (j < 2191) { # solucion temporal
+      # URL name REPRO2
+      url_raw=paste0(URL_name,j,'/REPRO2/') # Solo hasta semana 2190.
+    } else {
+      # URL name REPRO2
+      url_raw=paste0(URL_name,j,'/') # Solo hasta semana 2190.
+    }
     
     # Find the coordinates file
     # text_data <- getURL(url_raw,dirlistonly=TRUE) - Listado de cosas dentro de la carpeta
     text_data = getURL(url_raw,
-                       customrequest="NLST *.crd", 
+                       customrequest="NLST s*.crd", 
                        ssl.verifypeer = FALSE)
 
     file_interes = strsplit(text_data,"\r\n")[[1]]
     
-    # Read the coordinates file
-    XYZ <- read.csv(text = getURL(paste0(url_raw,file_interes)),
-                   header=FALSE,
-                   skip=5,
-                   sep="",
-                   dec=".",
-                   stringsAsFactors = FALSE,
-                   col.names=c("NUM","STAT","ID","X","Y","Z","FLAG"))
-    
-    # Keep specific columns and merge them with the existing
-    list = XYZ %>% select("STAT","X","Y","Z") %>% mutate("WEEK" = j)
-    
-    OUT = OUT %>% full_join(list, by = c("STAT", "X", "Y", "Z", "WEEK"))
-    
-    # Remove oldest coordinates and sort by STAT name
-    OUT_filt = OUT %>% 
-      group_by(STAT) %>%
-      top_n(1, WEEK) %>%
-      arrange(STAT)
-    
-    # Save file
-    write.table(OUT_filt,
-                file = paste0(pathout,"/SIRGAS_list.txt"),
-                quote=FALSE,
-                sep=";",
-                na="NA",
-                dec=".",
-                row.names=FALSE,
-                col.names=TRUE)
+    if (length(file_interes) != 0) {
+      
+      # Read the coordinates file, if exists
+      XYZ <- read.csv(text = getURL(paste0(url_raw,file_interes)),
+                      header=FALSE,
+                      skip=5,
+                      sep="",
+                      dec=".",
+                      stringsAsFactors = FALSE,
+                      col.names=c("NUM","STAT","ID","X","Y","Z","FLAG"))
+      
+      # Keep specific columns and merge them with the existing
+      list = XYZ %>% select("STAT","X","Y","Z") %>% 
+        mutate("WEEK" = j)
+      
+      OUT = OUT %>% full_join(list, by = c("STAT", "X", "Y", "Z", "WEEK"))
+      
+      # Remove oldest coordinates and sort by STAT name
+      OUT_filt = OUT %>% 
+        group_by(STAT) %>%
+        top_n(1, WEEK) %>%
+        arrange(STAT)
+      
+      # Save file
+      write.table(OUT_filt,
+                  file = paste0(pathout,"/SIRGAS_list.txt"),
+                  quote=FALSE,
+                  sep=";",
+                  na="NA",
+                  dec=".",
+                  row.names=FALSE,
+                  col.names=TRUE)
+      
+    } else {
+      
+      print(" ")
+      print("    WARNING !!!!")
+      print(paste0("No coordinate file for week ",j, ". Week ",j-1," is assumed to be the latest with data"))
+      break
+      
+    }
     
     # We need to wait a while and not send many queries to the server in a short time
     Sys.sleep(180)
@@ -108,7 +128,7 @@ search_stations<-function(pathout,trasform) {
   if (trasform == "Y"){
     search_and_load("ggplot2")
     source("XYZ2geog.R")
-    XYZ2geog(pathout,SIRGAS_list)
+    XYZ2geog(pathout,"SIRGAS_list")
   }
   
 }

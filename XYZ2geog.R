@@ -3,6 +3,8 @@ XYZ2geog<- function(path,nombre_file){
   # El documento debe estar formado por ID;X;Y;Z;WEEK- No importa el nombre, respetar el orden
   # Las columnas deben estar separadas por ";" y los decimales deben ser puntos
   
+  print("---- Running coordinate transformation (from XYZ to Lat,Long,H.)")
+  
   data_raw = read.csv(paste0(path,"/",nombre_file,".txt"),
                       header=TRUE,
                       sep=";",
@@ -83,7 +85,7 @@ XYZ2geog<- function(path,nombre_file){
   
    } # End while
    
-   print(paste0("Number of iteration: ",IT))
+   print(paste0("Amount of iterations: ",IT))
    
    # Plotting tolerances for control
    
@@ -103,7 +105,7 @@ XYZ2geog<- function(path,nombre_file){
    
    # End plot
   
-   OUT  =  OUT %>% mutate(LAT = data$LAT_2*(180/pi))
+  OUT  =  OUT %>% mutate(LAT = OUT$LAT_2*(180/pi))
   
   data_select  =  OUT %>% select("STAT","LAT","LONG","h") %>% arrange(STAT)
   
@@ -118,6 +120,6 @@ XYZ2geog<- function(path,nombre_file){
   
 
   
-  print("Transformation has ended")
+  print(">>>> Transformation has ended")
   
 }
