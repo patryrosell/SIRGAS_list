@@ -3,6 +3,14 @@ XYZ2geog<- function(path,nombre_file){
   # El documento debe estar formado por ID;X;Y;Z;WEEK- No importa el nombre, respetar el orden
   # Las columnas deben estar separadas por ";" y los decimales deben ser puntos
   
+  # Search for the weekly solutions (XYZ coordinates) of SIRGAS stations
+  packages <-
+    c("ggplot2")
+  
+  source("search_and_load.R")
+  
+  search_and_load(packages)
+  
   print("---- Running coordinate transformation (from XYZ to Lat,Long,H.)")
   
   data_raw = read.csv(paste0(path,"/",nombre_file,".txt"),
@@ -23,7 +31,20 @@ XYZ2geog<- function(path,nombre_file){
   # Max number of iterations
   it_max = 40
   
-   data  =  data_raw %>% mutate(LONG = atan(data_raw$Y/data_raw$X)*(180/pi))
+   data  =  data_raw %>% mutate(LONG1 = atan(data_raw$Y/data_raw$X)*(180/pi))
+   
+   data = data %>% mutate(LONG2 = case_when(
+     X > 0 & Y > 0 ~ LONG1, 
+     X > 0 & Y < 0 ~ 360 + LONG1,
+     X < 0 & Y > 0 ~ 180 + LONG1,
+     X < 0 & Y < 0 ~ 180 + LONG1
+   ))
+   
+   data = data %>% mutate(LONG = case_when(
+     LONG2 > 180 ~ -(360 - LONG2),
+     LONG2 < 180 ~ LONG2
+   ))
+   
    
    # Valores iniciales 
    data  =  data %>% mutate(theta = aa*data$Z/(bb*sqrt(data$X^2+data$Y^2)))
@@ -109,6 +130,9 @@ XYZ2geog<- function(path,nombre_file){
   
   data_select  =  OUT %>% select("STAT","LAT","LONG","h") %>% arrange(STAT)
   
+  
+  data_select  =  OUT %>% select(one_of("STAT","LAT","LONG","h","WEEK")) %>% arrange(STAT)
+ 
   nombre_salida = paste0(nombre_file,"_ellip.txt")
   
   write.table(data_select,
